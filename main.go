@@ -2,6 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"strconv"
+	"time"
+	"workerpool/stringworkerpool"
 	"workerpool/workerpool"
 )
 
@@ -10,36 +14,58 @@ type PrintTask struct {
 }
 
 func (p PrintTask) Run() error {
-	fmt.Printf("Task #%d running...\n", p.num)
+	time.Sleep(time.Duration(rand.Intn(1000)) * time.Millisecond) // random time from 0 to 1 sec
+	fmt.Printf("Task #%d is running...\n", p.num)
 	return nil
 }
 
 func main() {
-	// usage example:
+
+	// Пример использования Worker Pool с тасками
 
 	var tasks []workerpool.Task
 	for i := range 100 {
 		tasks = append(tasks, PrintTask{i})
 	}
 
-	// create worker pool
 	pool := workerpool.NewPool(len(tasks))
 
-	// add some workers
 	pool.AddWorker()
-	pool.AddWorker()
+	second := pool.AddWorker()
 	pool.AddWorker()
 	pool.AddWorker()
 
-	// submit tasks
 	for i := range len(tasks) {
 		pool.Submit(tasks[i])
 	}
 
-	// add & delete some workers
-
-	// wait
+	pool.RemoveWorker(second)
 
 	pool.Wait()
+
+	// stop all workers
+	// time.Sleep(5 * time.Second)
+	// pool.Stop()
+
+	// Пример использования StringWorkerPool
+	var strings []string
+	for i := range 20 {
+		strings = append(strings, "string #"+strconv.Itoa(i))
+	}
+
+	sPool := stringworkerpool.NewStringWorkerPool(len(strings))
+	sPool.AddWorker()
+	second = sPool.AddWorker()
+	sPool.AddWorker()
+	sPool.AddWorker()
+
+	for _, s := range strings {
+		sPool.Input() <- s
+	}
+	close(sPool.Input())
+
+	sPool.RemoveWorker(second)
+
+	sPool.Wait()
 
 }
